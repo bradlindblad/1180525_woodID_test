@@ -18,11 +18,11 @@ library(keras)
 
 ### Read in images used to modify convnet
 ```{r}
-original_dataset_dir <- "E:\\Code_Repo\\R_Repo\\rstudio_keras_kettlebell_cv\\downloaded\\original_data"
+original_dataset_dir <- "E:\\Code_Repo\\R_Repo\\1180525_woodID_test\\downloaded\\original_data"
 ```
 
 ```{r}
-base_dir <- "E:\\Code_Repo\\R_Repo\\rstudio_keras_kettlebell_cv\\downloaded\\wood_small"
+base_dir <- "E:\\Code_Repo\\R_Repo\\1180525_woodID_test\\downloaded\\wood_small"
 dir.create(base_dir)
 ```
 
