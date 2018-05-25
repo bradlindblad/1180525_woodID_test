@@ -1,0 +1,208 @@
+---
+title: "Keras_WoodID_Test"
+output: html_notebook
+---
+
+Inspired by:  https://tensorflow.rstudio.com/blog/keras-image-classification-on-small-datasets.html    
+Goal is to train a model to identify kettlebells and eyeglasses by utilizing a pre-trained network
+ 
+ 
+We will use the VGG16 architecture. This is a pre-trained model like "Inception" and "ResNet50"
+
+Let's start up the VGG16:
+```{r}
+library(keras)
+```
+
+
+
+### Read in images used to modify convnet
+```{r}
+original_dataset_dir <- "E:\\Code_Repo\\R_Repo\\rstudio_keras_kettlebell_cv\\downloaded\\original_data"
+```
+
+```{r}
+base_dir <- "E:\\Code_Repo\\R_Repo\\rstudio_keras_kettlebell_cv\\downloaded\\wood_small"
+dir.create(base_dir)
+```
+
+```{r}
+train_dir <- file.path(base_dir, "train")
+dir.create(train_dir)
+validation_dir <- file.path(base_dir, "validation")
+dir.create(validation_dir)
+test_dir <- file.path(base_dir, "test")
+dir.create(test_dir)
+```
+
+```{r}
+train_white_oak_dir <- file.path(train_dir, "white_oak")
+dir.create(train_white_oak_dir)
+
+train_walnut_dir <- file.path(train_dir, "walnut")
+dir.create(train_walnut_dir)
+```
+
+```{r}
+validation_white_oak_dir <- file.path(validation_dir, "white_oak")
+dir.create(validation_white_oak_dir)
+
+validation_walnut_dir <- file.path(validation_dir, "walnut")
+dir.create(validation_walnut_dir)
+
+test_white_oak_dir <- file.path(test_dir, "white_oak")
+dir.create(test_white_oak_dir)
+
+test_walnut_dir <- file.path(test_dir, "walnut")
+dir.create(test_walnut_dir)
+```
+
+```{r}
+fnames <- paste0("white_oak.", 1:30, ".jpg")
+file.copy(file.path(original_dataset_dir, fnames), 
+          file.path(train_white_oak_dir)) 
+
+fnames <- paste0("white_oak.", 31:33, ".jpg")
+file.copy(file.path(original_dataset_dir, fnames), 
+          file.path(validation_white_oak_dir))
+
+fnames <- paste0("white_oak.", 34:44, ".jpg")
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(test_white_oak_dir))
+
+fnames <- paste0("walnut.", 1:30, ".jpg")
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(train_walnut_dir))
+
+fnames <- paste0("walnut.", 31:33, ".jpg")
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(validation_walnut_dir)) 
+
+fnames <- paste0("walnut.", 34:44, ".jpg")
+file.copy(file.path(original_dataset_dir, fnames),
+          file.path(test_walnut_dir))
+```
+
+
+
+
+### Fire up the convnet
+```{r, warning = F, message = F}
+
+conv_base <- application_vgg16(
+  weights = "imagenet",
+  include_top = FALSE,
+  input_shape = c(150, 150, 3)
+)
+```
+
+Architecture detail:
+```{r}
+summary(conv_base)
+```
+
+Because models behave just like layers, you can add a model (like conv_base) to a sequential model just like you would add a layer:
+```{r}
+model <- keras_model_sequential() %>% 
+  conv_base %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 256, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+```
+
+```{r}
+summary(model)
+```
+ 
+In Keras, you freeze a network using the freeze_weights() function:
+```{r}
+length(model$trainable_weights)
+freeze_weights(conv_base)
+length(model$trainable_weights)
+```
+ 
+### Data Augmentation
+ 
+Data augmentation takes the approach of generating more training data from existing training samples, by augmenting   the samples via a number of random transformations that yield believable-looking images
+
+```{r}
+train_datagen = image_data_generator(
+  rescale = 1/255,
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2,
+  horizontal_flip = TRUE,
+  fill_mode = "nearest"
+)
+```
+
+Explained:   
+1. rotation_range is a value in degrees (0–180), a range within which to randomly rotate pictures.   
+2. width_shift and height_shift are ranges (as a fraction of total width or height) within which to randomly translate pictures vertically or horizontally.   
+3. shear_range is for randomly applying shearing transformations.   
+4. zoom_range is for randomly zooming inside pictures.   
+5. horizontal_flip is for randomly flipping half the images horizontally – relevant when there are no assumptions of 
+6. horizontal asymmetry (for example, real-world pictures).   
+7. fill_mode is the strategy used for filling in newly created pixels, which can appear after a rotation or a width/height shift.
+
+### Train using image_data_generator
+```{r}
+# Note that the validation data shouldn't be augmented!
+test_datagen <- image_data_generator(rescale = 1/255)  
+
+train_generator <- flow_images_from_directory(
+  train_dir,                  # Target directory  
+  train_datagen,              # Data generator
+  target_size = c(150, 150),  # Resizes all images to 150 × 150
+  batch_size = 20,
+  class_mode = "binary"       # binary_crossentropy loss for binary labels
+)
+
+validation_generator <- flow_images_from_directory(
+  validation_dir,
+  test_datagen,
+  target_size = c(150, 150),
+  batch_size = 20,
+  class_mode = "binary"
+)
+
+model %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = optimizer_rmsprop(lr = 2e-5),
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit_generator(
+  train_generator,
+  steps_per_epoch = 100,
+  epochs = 1, #normally do 30 epochs; 1 for brevity
+  validation_data = validation_generator,
+  validation_steps = 50
+)
+```
+
+Now test on the test data
+```{r}
+test_generator <- flow_images_from_directory(
+  test_dir,
+  test_datagen,
+  target_size = c(150, 150),
+  batch_size = 20,
+  class_mode = "binary"
+)
+```
+
+```{r}
+model %>% evaluate_generator(test_generator, steps = 50)
+```
+
+Export saved model
+```{r}
+export_savedmodel(object = model,
+                  export_dir_base = "E:\\Code_Repo\\R_Repo\\rstudio_keras_kettlebell_cv")
+```
+
+
+
