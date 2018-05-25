@@ -58,27 +58,27 @@ dir.create(test_walnut_dir)
 ```
 
 ```{r}
-fnames <- paste0("white_oak.", 1:30, ".jpg")
+fnames <- paste0("white_oak (", 1:30, ").jpg")
 file.copy(file.path(original_dataset_dir, fnames), 
           file.path(train_white_oak_dir)) 
 
-fnames <- paste0("white_oak.", 31:33, ".jpg")
+fnames <- paste0("white_oak (", 31:33, ").jpg")
 file.copy(file.path(original_dataset_dir, fnames), 
           file.path(validation_white_oak_dir))
 
-fnames <- paste0("white_oak.", 34:44, ".jpg")
+fnames <- paste0("white_oak (", 34:44, ").jpg")
 file.copy(file.path(original_dataset_dir, fnames),
           file.path(test_white_oak_dir))
 
-fnames <- paste0("walnut.", 1:30, ".jpg")
+fnames <- paste0("walnut (", 1:30, ").jpg")
 file.copy(file.path(original_dataset_dir, fnames),
           file.path(train_walnut_dir))
 
-fnames <- paste0("walnut.", 31:33, ".jpg")
+fnames <- paste0("walnut (", 31:33, ").jpg")
 file.copy(file.path(original_dataset_dir, fnames),
           file.path(validation_walnut_dir)) 
 
-fnames <- paste0("walnut.", 34:44, ".jpg")
+fnames <- paste0("walnut (", 34:44, ").jpg")
 file.copy(file.path(original_dataset_dir, fnames),
           file.path(test_walnut_dir))
 ```
